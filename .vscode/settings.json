@@ -1,0 +1,11 @@
+{
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "driver": "SQLite",
+      "name": "Test",
+      "database": "${workspaceFolder:nextjs-fastapi}/test.db"
+    }
+  ],
+  "sqltools.useNodeRuntime": true
+}
