@@ -1,13 +1,15 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from io import BytesIO
 from openai import OpenAI
 from pydantic import BaseModel
 
 from sqlalchemy.orm import Session
 
-from api.db.database import engine, Base 
-
+from api.db.database import engine, Base, get_db 
 from api.db import models, schemas, database
+from .db.models import File as FileModel
 
 
 class PromptModel(BaseModel):
@@ -58,3 +60,24 @@ async def hello_world(prompt: PromptModel, db: Session = Depends(database.get_db
     db.commit()
 
     return {"message": ai_response_content}
+
+# @app.post("/api/upload")
+# async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
+#     try:
+#         print("Into uplaoding")
+#         file_content = await file.read()  # Read file content
+#         db_file = FileModel(filename=file.filename, content=file_content)
+#         db.add(db_file)
+#         db.commit()
+#         db.refresh(db_file)
+#         print("file is here:,", db_file.filename)
+#         return {"filename": db_file.filename, "id": db_file.id}
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/files/{file_id}")
+async def get_file(file_id: int, db: Session = Depends(get_db)):
+    db_file = db.query(FileModel).filter(FileModel.id == file_id).first()    
+    if db_file is None:
+        raise HTTPException(status_code=404, detail="File not found")
+    return StreamingResponse(BytesIO(db_file.content), media_type="application/pdf")
